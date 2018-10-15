@@ -194,6 +194,20 @@ Note that after the script completes, the five pipelines are running on the East
 ## Implementation Notes
 All interaction with the Control Hub REST API is encapsulated in the script ```python/utils/control-hub-api-helper.py```.
 
-The API calls to update labels and synchronize Jobs could be performed in only a few lines of code; the majority of the code in this example validates that SDCs and Jobs are in a suitable state for Job migration.  For details, see the validation checks in ```python/utils/sdc_validator.py``` and ```python/utils/job_validator.py```.
+The API calls to update labels and synchronize Jobs could be performed in only a few lines of code; the majority of the code in this example validates that SDCs and Jobs are in a suitable state for Job migration.  
+
+SDC validation rules include:
+
+- There is at least one SDC for both labels
+- No Edge Data Collectors have one of the labels
+- No SDC has one of the labels as a "fixed" (immutable) label
+- No SDC has both labels 
+
+Job validation rules include:
+
+- Jobs are not out of sync
+
+
+For details, see the validation checks in ```python/utils/sdc_validator.py``` and ```python/utils/job_validator.py```.
 
 
