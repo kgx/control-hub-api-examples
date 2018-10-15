@@ -1,0 +1,6 @@
+Job Name|Pipeline Name|Pipeline Version|Last Run Date|User|Data Source|Config 1 Name|Config 1 Value|Config 2 Name|Config 2 Value|Config 3 Name|Config 3 Value
+Files to Hadoop|Files to Hadoop|v4|2018-05-30 12:38:36|mark@globex|Local Directory|Directory|/data/table_1|File Pattern|data1.json
+JDBC Multitable to Hive|JDBC Multitable to Hive|v5|2018-05-31 11:53:55|mark@globex|JDBC|JDBC URL|jdbc:oracle:thin:@10.10.10.10:1521/orclpdb1.localdomain|Table Pattern|T_%
+Kafka to Hive|Kafka to Hive|v3|2018-06-04 14:17:17|mark@globex|Kafka Consumer|Broker URI|portland:9092, brooklyn:9092, chicago:9092|Topic(s)|topic_100, topic_101
+Oracle CDC to Kafka|Oracle CDC to Kafka|v1|2018-05-24 02:42:39|mark@globex|Oracle CDC|JDBC URL|jdbc:oracle:thin:@10.10.10.10:1521:ORCLCDB|Schema|MARK|Table Pattern|TABLE_1
+Twitter Ingest|Twitter Ingest|v7|2018-05-31 11:58:54|mark@globex|HTTP Client|Resource URL|https://stream.twitter.com/1.1/statuses/sample.json|HTTP Method|GET
