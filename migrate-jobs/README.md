@@ -14,7 +14,7 @@ To support the automatic migration of Jobs across regions we'll use two addition
 
 ![sdcs-with-labels](images/sdcs-with-labels.png)
 
-With those Labels in place, Jobs that reference the label ```active``` will initially run on Data Collectors in the West.  If we swap Data Collector labels so that Data Collectors in the West are labeled as ```standby``` and Data Collectors in the East are labeled as ```active``` and then invoke a [Synchronize](https://streamsets.com/documentation/controlhub/latest/help/controlhub/UserGuide/Jobs/Jobs-Managing.html#concept_vt5_qwn_hy) command, the Jobs will migrate to Data Collectors in the East.
+With those labels in place, Jobs that reference the label ```active``` will initially run on Data Collectors in the West.  If we swap Data Collector labels so that Data Collectors in the West are labeled as ```standby``` and Data Collectors in the East are labeled as ```active``` and then invoke a [Synchronize](https://streamsets.com/documentation/controlhub/latest/help/controlhub/UserGuide/Jobs/Jobs-Managing.html#concept_vt5_qwn_hy) command, the Jobs will migrate to Data Collectors in the East.
 
 ## Example Jobs
 Assume we have four Jobs running with the ```active``` label:
