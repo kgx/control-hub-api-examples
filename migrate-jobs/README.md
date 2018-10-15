@@ -191,4 +191,9 @@ Note that after the script completes, the five pipelines are running on the East
 ![sdcs-after](images/sdcs-after.png)
 
 
+## Implementation Notes
+All interaction with the Control Hub REST API is encapsulated in the script ```python/utils/control-hub-api-helper.py```.
+
+The API calls to update labels and synchronize Jobs could be performed in only a few lines of code; the majority of the code in this example validates that SDCs and Jobs are in a suitable state for Job migration.  For details, see the validation checks in ```python/utils/sdc_validator.py``` and ```python/utils/job_validator.py```.
+
 
