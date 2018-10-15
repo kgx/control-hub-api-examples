@@ -21,7 +21,7 @@ Assume we have four Jobs running with the ```active``` label:
 
 ![jobs](images/jobs.png)
 
-Note that one of the Jobs is configured to run with two instances, which causes it to run concurrently on two different Data Collectors for horizontal scale-out:
+Note that one of the Jobs is configured to run with two instances, which causes it to run pipelines concurrently on two different Data Collectors for horizontal scale-out:
 
 ![jobs2](images/jobs2.png)
 
