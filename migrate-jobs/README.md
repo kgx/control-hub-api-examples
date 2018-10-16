@@ -103,7 +103,7 @@ Done
 
 ```
 
-The script reports on Data Collectors with matching labels and finds the four active ```prod``` Jobs with five active Pipelines (including both instances of the 'Weather Raw to Refined' pipeline, running on two different Data Collectors).
+The script reports on Data Collectors with matching labels and finds the four  ```active``` Jobs with five running pipelines (including both instances of the 'Weather Raw to Refined' pipeline, running on two different Data Collectors).
 
 
 ## Running the script 
