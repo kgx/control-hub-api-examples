@@ -1,9 +1,6 @@
 # Generating a Job for the latest version of a Pipeline
 
-This example retrieves the latest commit (i.e. version) of a given pipeline, including its labels 
-and runtime parameter values, and creates a Job with the same labels and runtime parameter 
-values.  As you may or may not want to automatically propagate all labels and runtime parameters;
-this example is intended only as a starting point to demonstrate the API.
+This example retrieves the latest commit (i.e. version) of a given pipeline, and verifies it for best practices.  Only one best practice is implemented right now (adding descriptive labels)
 
 ## Prerequisites
 
@@ -15,14 +12,6 @@ this example is intended only as a starting point to demonstrate the API.
 ![pipeline1](images/pipeline1.png) 
 
 Note the pipeline is on Version 6 and has three labels.  
-
-On the Parameters tab you can see two parameters are set:
-
-![pipeline2](images/pipeline2.png) 
-
-On the Info tab you can see the Pipeline ID:
-
-![pipeline3](images/pipeline3.png) 
 
 ## Step 2: Provide Control Hub credentials 
 
