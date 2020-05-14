@@ -19,7 +19,7 @@ import re
 
   
 sch_url = "https://cloud.streamsets.com"
-session_token = sys.argv[3]
+session_token = sys.argv[2]
 
 ## Defaults for Job properties
 default_stats_refresh_interval = 60000
@@ -45,7 +45,11 @@ api_headers['X-SS-User-Auth-Token'] = session_token
 ## Create the endpoint URL
 endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelines/'
 response = requests.get( url = endpoint_url, headers = api_headers)
-pipelines = json.loads(response.text)
+# print(response.text)
+pipelines = json.loads(response.text)["data"]
+spark_driver_memory = 0
+spark_executor_memory = 0
+
 for pipeline in pipelines:
     pipeline_id = pipeline["pipelineId"]
     commit_id = pipeline["commitId"]
@@ -54,7 +58,7 @@ for pipeline in pipelines:
     runtime_parameters = {}
     spark_config = {}
     ## Create the endpoint URL
-    endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelineCommit/' + latest_commit['commitId']
+    endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelineCommit/' + commit_id
 
     ## Call the API 
     response = requests.get( url = endpoint_url, headers = api_headers )
@@ -68,48 +72,28 @@ for pipeline in pipelines:
     pipeline_definition = json.loads(response.json()['pipelineDefinition'])
     #print("pipelineDefinition: {}", pipeline_definition)
 
-    pipeline_definition["sparkConfig"]
     configuration = pipeline_definition['configuration']
-    spark_driver_memory = 0
-    spark_executor_memory = 0
+
     for item in configuration:
         if item['name'] == 'constants':
             for param in item['value']:
                 runtime_parameters[param['key']] = param['value']
-        if item['name'] == 'sparkConfig':
+        if item['name'] == 'sparkConfigs':
             for param in item['value']:
                 key = param['key']
                 value = param['value']
                 spark_config[key] = value
                 if key == "spark.driver.memory":
                     spark_driver_memory += int(value.replace("G", ""))
+                    print(str.format("Executor: {}, Driver: {}", spark_executor_memory, spark_driver_memory))
                 if key == "spark.executor.memory":
                     spark_executor_memory += int(value.replace("G", ""))
+                    print(str.format("Executor: {}, Driver: {}", spark_executor_memory, spark_driver_memory))
 
 
 
 
-    if len(runtime_parameters) == 0:
-        print('No Runtime Parameters found for commit')
-    else:
-        print('** Runtime Parameters ********************')
-        for key in runtime_parameters:
-            print(key + ' : ' + runtime_parameters[key])
-
-    ###############
-    ## Create a Job
-    ###############
-    # print('Testing Job')
-
-    stages = pipeline_definition['stages']
-    for stage in stages: 
-        label = stage["uiInfo"]["label"]
-        clean_label = re.sub(r"[\s\d_-]","",label)
-        instance_name = re.sub("_.*","",stage["instanceName"])
-        #print("checking stage " + instance_name + "(" + clean_label + ")")
-        if re.match(r".*\d$", label) or clean_label == instance_name:
-            print("Detected non-descriptive label: " + label)
-
+print(str.format("Executor: {}, Driver: {}", spark_executor_memory, spark_driver_memory))
 
 ## Create the endpoint URL
 # endpoint_url = sch_url + '/jobrunner/rest/v1/jobs/createJobs'
