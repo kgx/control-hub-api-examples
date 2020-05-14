@@ -3,6 +3,7 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.DS_Store
+sch_credentials.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
