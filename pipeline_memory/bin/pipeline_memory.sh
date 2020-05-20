@@ -1,8 +1,6 @@
 ## Control Hub URL
 export SCH_URL=https://cloud.streamsets.com
 
-## Pipeline ID
-export PIPELINE_ID=bf9c754e-3c55-4b16-b051-04f083f365e2:dpmfield
 
 ##########################
 ## No changes needed below
