@@ -33,4 +33,4 @@ if [ -z $SESSION_TOKEN ];
 fi
 
 ## Call the python script to do the work
-python3 ./python/create_job_for_pipeline.py $SCH_URL $PIPELINE_ID $SESSION_TOKEN 
+python3 ./python/test_pipeline_best_practices.py $SCH_URL $PIPELINE_ID $SESSION_TOKEN 

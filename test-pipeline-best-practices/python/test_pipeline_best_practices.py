@@ -63,8 +63,6 @@ if response.status_code != 200:
     print(response.text)
     exit (-1)
 
-print(response.json())
-
 latest_commit = response.json()[0]
 
 ## Extract the label text from each Label object 
@@ -116,7 +114,23 @@ else:
     print('** Runtime Parameters ********************')
     for key in runtime_parameters:
         print(key + ' : ' + runtime_parameters[key])
+ if item['name'] == 'sparkConfigs':
+    pipeline_count += 1
+    for param in item['value']:
+        key = param['key']
+        value = param['value']
+        spark_config[key] = value
+        if key == "spark.driver.cores":
+            spark_driver_cores += int(value)
+        if key == "spark.executor.cores":
+            spark_exectutor_cores += int(value)
+            print(str.format("{} - Executor: {}g {} cores, Driver: {}g {} cores", pipeline_count, spark_executor_memory, spark_exectutor_cores, spark_driver_memory, spark_driver_cores))
+        if key == "spark.driver.memory":
+            spark_driver_memory += int(value.replace("G", ""))
+        if key == "spark.executor.memory":
+            spark_executor_memory += int(value.replace("G", ""))
 
+            
 ###############
 ## Create a Job
 ###############
@@ -130,6 +144,20 @@ for stage in stages:
     #print("checking stage " + instance_name + "(" + clean_label + ")")
     if re.match(r".*\d$", label) or clean_label == instance_name:
         print("Detected non-descriptive label: " + label)
+
+    if stage["library"] == "streamsets-spark-snowflake-lib":
+        stage_config = stage['configuration']
+        for item in stage_config:
+            if item['name'] == 'conf.readMode' and item["value"] != "QUERY":
+                print("Detected non-query mode Snowflake Origin: " + label)
+            if item['name'] == 'conf.query' and re.match(r".*FROM [^\$\.] (where.*)?$", item["value"]):
+                print("Detected invalid query " + label)
+
+   
+
+
+
+
 
 
 ## Create the endpoint URL
