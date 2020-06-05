@@ -14,6 +14,7 @@ import json
 import requests
 import sys
 import re
+import sqlparse
 
 
 ## Command line args
@@ -49,161 +50,120 @@ api_headers['X-SS-User-Auth-Token'] = session_token
 print('\nGetting latest commit for pipeline ID: ' + pipeline_id + '\n')
 
 ## Create the endpoint URL
-endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelines/latestCommit'
 
-## Set the pipeline_id as the payload
-payload = [pipeline_id]
+endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelines?onlyPublished=true&executionModes=STREAMING&orderBy=LAST_MODIFIED_ON&order=DESC'
+response = requests.get( url = endpoint_url, headers = api_headers)
+# print(response.text)
+pipelines = json.loads(response.text)["data"]
+for pipeline in pipelines:
+    pipeline_id = pipeline["pipelineId"]
+    commit_id = pipeline["commitId"]
 
-## Call the API 
-response = requests.post( url = endpoint_url, headers = api_headers, json = payload )
+    ## Set the pipeline_id as the payload
+    payload = [pipeline_id]
 
-if response.status_code != 200: 
-    print('Error getting latest commit')
-    print(response.status_code)
-    print(response.text)
-    exit (-1)
+    ## Call the API 
+    endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelines/latestCommit'
+    response = requests.post( url = endpoint_url, headers = api_headers, json = payload )
 
-latest_commit = response.json()[0]
+    if response.status_code != 200: 
+        print('Error getting latest commit')
+        print(response.status_code)
+        print(response.text)
+        exit (-1)
 
-## Extract the label text from each Label object 
-labels = []
-for label in latest_commit['pipelineLabels']:
-    labels.append(label['label'])
+    latest_commit = response.json()[0]
 
-print('** Latest Commit *************************')
-print('Pipeline ID : ' + pipeline_id)
-print('Pipeline Name : ' + latest_commit['name'])
-print('Description : ' + latest_commit['description'])
-print('Version : ' + latest_commit['version'])
-print('Commit ID : ' + latest_commit['commitId'])
-print('Rules ID : ' + latest_commit['currentRules']['id'])
-print('Pipeline Labels : ' + json.dumps(labels))
+    ## Extract the label text from each Label object 
+    labels = []
+    for label in latest_commit['pipelineLabels']:
+        labels.append(label['label'])
 
-###########################################
-## Get runtime parameters for latest commit
-###########################################
-print('\nGetting runtime parameters for commit ID: ' + latest_commit['commitId'] + '\n')
+    print('\n\n**************************************************')
+    print('Pipeline ID : ' + pipeline_id)
+    print('Pipeline Name : ' + latest_commit['name'])
+    print('Description : ' + latest_commit['description'])
+    print('Version : ' + latest_commit['version'])
+    print('Commit ID : ' + latest_commit['commitId'])
+    print('Rules ID : ' + latest_commit['currentRules']['id'])
+    print('Pipeline Labels : ' + json.dumps(labels))
 
-runtime_parameters = {}
+    ###########################################
+    ## Get runtime parameters for latest commit
+    ###########################################
+    # print('Getting runtime parameters for commit ID: ' + latest_commit['commitId'] + '\n')
 
-## Create the endpoint URL
-endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelineCommit/' + latest_commit['commitId']
+    runtime_parameters = {}
 
-## Call the API 
-response = requests.get( url = endpoint_url, headers = api_headers )
+    ## Create the endpoint URL
+    endpoint_url = sch_url + '/pipelinestore/rest/v1/pipelineCommit/' + latest_commit['commitId']
 
-if response.status_code != 200: 
-    print('Error getting runtime parameters for latest commit')
-    print(response.status_code)
-    print(response.text)
-    exit (-1)
+    ## Call the API 
+    response = requests.get( url = endpoint_url, headers = api_headers )
 
-pipeline_definition = json.loads(response.json()['pipelineDefinition'])
-print("pipelineDefinition: {}", pipeline_definition)
+    if response.status_code != 200: 
+        print('Error getting runtime parameters for latest commit')
+        print(response.status_code)
+        print(response.text)
+        exit (-1)
 
-configuration = pipeline_definition['configuration']
-for item in configuration:
-    if item['name'] == 'constants':
-        for param in item['value']:
-            runtime_parameters[param['key']] = param['value']
-        break
+    pipeline_definition = json.loads(response.json()['pipelineDefinition'])
+    #print("pipelineDefinition: {}", pipeline_definition)
 
-if len(runtime_parameters) == 0:
-    print('No Runtime Parameters found for commit')
-else:
-    print('** Runtime Parameters ********************')
-    for key in runtime_parameters:
-        print(key + ' : ' + runtime_parameters[key])
- if item['name'] == 'sparkConfigs':
-    pipeline_count += 1
-    for param in item['value']:
-        key = param['key']
-        value = param['value']
-        spark_config[key] = value
-        if key == "spark.driver.cores":
-            spark_driver_cores += int(value)
-        if key == "spark.executor.cores":
-            spark_exectutor_cores += int(value)
-            print(str.format("{} - Executor: {}g {} cores, Driver: {}g {} cores", pipeline_count, spark_executor_memory, spark_exectutor_cores, spark_driver_memory, spark_driver_cores))
-        if key == "spark.driver.memory":
-            spark_driver_memory += int(value.replace("G", ""))
-        if key == "spark.executor.memory":
-            spark_executor_memory += int(value.replace("G", ""))
+    configuration = pipeline_definition['configuration']
+    for item in configuration:
+        if item['name'] == 'constants':
+            for param in item['value']:
+                value = param["value"]
+                key = param['key']
+                runtime_parameters[key] = value
+                if "$" in value and "runtime:loadResource" not in value: 
+                    print("Detected non loadResource configuration, which disables changes at runtime in " + key + ' : ' + value)
+            break
 
-            
-###############
-## Create a Job
-###############
-print('Testing Job')
 
-stages = pipeline_definition['stages']
-for stage in stages: 
-    label = stage["uiInfo"]["label"]
-    clean_label = re.sub(r"[\s\d_-]","",label)
-    instance_name = re.sub("_.*","",stage["instanceName"])
-    #print("checking stage " + instance_name + "(" + clean_label + ")")
-    if re.match(r".*\d$", label) or clean_label == instance_name:
-        print("Detected non-descriptive label: " + label)
+    ###############
+    ## Create a Job
+    ###############
+    print('Testing for best practices: ')
 
-    if stage["library"] == "streamsets-spark-snowflake-lib":
-        stage_config = stage['configuration']
-        for item in stage_config:
-            if item['name'] == 'conf.readMode' and item["value"] != "QUERY":
-                print("Detected non-query mode Snowflake Origin: " + label)
-            if item['name'] == 'conf.query' and re.match(r".*FROM [^\$\.] (where.*)?$", item["value"]):
-                print("Detected invalid query " + label)
+    stages = pipeline_definition['stages']
+    for stage in stages: 
+        label = stage["uiInfo"]["label"]
+        clean_label = re.sub(r"[\s\d_-]","",label)
+        instance_name = re.sub("_.*","",stage["instanceName"])
+        #print("checking stage " + instance_name + "(" + clean_label + ")")
+        if re.match(r".*\d$", label) or clean_label == instance_name:
+            print("Detected non-descriptive label: " + label)
 
-   
-
+        if stage["library"] == "streamsets-spark-snowflake-lib":
+            configuration = stage['configuration']
+            for item in configuration:
+                #print(item['name'] + " " + str(item["value"]))
+                value = item["value"]
+                if item['name'] == 'conf.readMode' and value != "QUERY":
+                    print("Detected non-query mode Snowflake Origin: " + label + " this will not enable query push-down")
+                if item['name'] == 'conf.query':
+                    parsed = sqlparse.parse(value)[0]
+                    prior_token = parsed.tokens[0]
+                    for token in parsed.tokens:
+                        #print(str(token.ttype) + " " + str(token))
+                        if prior_token.match(sqlparse.tokens.Keyword, ["JOIN", "FROM"], regex=False) and token.match(None, "[^\$\.\s]*", regex=True):
+                            #print(str(token.ttype) + " " + str(token))
+                            print("Detected non-fully qualified table in query " + label + " which could cause issues with push-down: " + value)
+                        if token.match(sqlparse.tokens.Keyword, ["JOIN", "FROM"], regex=False):
+                            #print(str(token.ttype) + " " + str(token))
+                            prior_token = token
 
 
 
+    # Other things to check from API: 
+    # 1. Hard coding of databases / schemas in fragments
+    # 2. Check for empty batches ahead of field renamer
+    # 3. loadResource instead of conf
+    # 4. LOAD_DATE CURRENT_TIME in an expression
+    # 5. LOAD_DATE not renamed from the source to the LOAD_DATE ()
 
+    # Things to ccheck using Streamsets Test Framework
+    # 1. Required Data Vault columns (HKEYS, LOAD_DATE, etc.) are present on all data frames that would be loaded into Raw Vault Tables
 
-## Create the endpoint URL
-# endpoint_url = sch_url + '/jobrunner/rest/v1/jobs/createJobs'
-
-## Set the Job's configuration
-# job_config = {}
-# job_config['name'] = 'Job for ' + latest_commit['name']
-# job_config['description'] = latest_commit['description']
-# job_config['pipelineName'] = latest_commit['name']
-# job_config['pipelineId'] = pipeline_id
-# job_config['pipelineCommitId'] = latest_commit['commitId']
-# job_config['rulesId'] = latest_commit['currentRules']['id']
-# job_config['pipelineCommitLabel'] = 'v' + latest_commit['version']
-# job_config['labels'] = labels
-# job_config['statsRefreshInterval'] = default_stats_refresh_interval
-# job_config['numInstances'] = default_num_instances
-# job_config['migrateOffsets'] = default_migrate_offsets
-# job_config['edge'] = default_edge
-# job_config['runtimeParameters'] = json.dumps(runtime_parameters)
-
-
-# print('\n** Job Configuration *******************')
-# for key in job_config.keys():
-#     if key == 'labels':
-#         print ('labels : ' + json.dumps(job_config['labels']))
-#     elif key == 'runtimeParameters':
-#         print ('runtimeParameters : ' + json.dumps(job_config['runtimeParameters']))
-#     else:
-#         print(key + ' : ' + str(job_config[key]))
-
-# ## Set the job_data as the payload
-# payload = [job_config]
-
-## Call the API 
-#response = requests.put( url = endpoint_url, headers = api_headers, json = payload )
-
-# if response.status_code != 200: 
-#     print('Error creating job')
-#     print(response.status_code)
-#     print(response.text)
-#     exit (-1)
-
-# job = response.json()[0]
-
-# print('\nJob created successfully!')
-
-# print('Job ID: ' + job['id'])
-# print('\nDone')
