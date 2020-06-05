@@ -143,15 +143,16 @@ for pipeline in pipelines:
                 value = item["value"]
                 if item['name'] == 'conf.readMode' and value != "QUERY":
                     print("Detected non-query mode Snowflake Origin: " + label + " this will not enable query push-down")
+                    break
                 if item['name'] == 'conf.query':
                     parsed = sqlparse.parse(value)[0]
                     prior_token = parsed.tokens[0]
                     for token in parsed.tokens:
                         #print(str(token.ttype) + " " + str(token))
-                        if prior_token.match(sqlparse.tokens.Keyword, ["JOIN", "FROM"], regex=False) and token.match(None, "[^\$\.\s]*", regex=True):
+                        if prior_token.match(sqlparse.tokens.Keyword, ["JOIN", "FROM"], regex=False) and token.match(None, "[^\(\$\.\s]*", regex=True):
                             #print(str(token.ttype) + " " + str(token))
                             print("Detected non-fully qualified table in query " + label + " which could cause issues with push-down: " + value)
-                        if token.match(sqlparse.tokens.Keyword, ["JOIN", "FROM"], regex=False):
+                        if token.match(sqlparse.tokens.Keyword, [".*"], regex=True):
                             #print(str(token.ttype) + " " + str(token))
                             prior_token = token
 
